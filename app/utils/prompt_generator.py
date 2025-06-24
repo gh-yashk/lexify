@@ -7,7 +7,7 @@ def generate_prompt(text: str, keywords: list = [], references: list = []) -> st
     Returns:
         str: A formatted prompt string ready for use in a Markdown conversion task.
     """
-    prompt = """
+    prompt = f"""
 You are an expert technical writer. You will be given a transcript or summary from a YouTube video. Your task is to convert it into a clean, logically organized, and well-formatted Markdown document (`notes.md`).
 
 ## Note:

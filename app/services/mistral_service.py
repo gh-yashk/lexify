@@ -21,7 +21,11 @@ def mistral_response(prompt: str) -> str:
     logger.debug(f"Sending request to Mistral API at {url} with payload: {payload}")
 
     try:
-        response = requests.post(url, json=payload, timeout=60)
+        response = requests.post(
+            url,
+            json=payload,
+            # timeout=60
+        )
         response.raise_for_status()
         logger.debug(f"Received raw response: {response.text}")
 
