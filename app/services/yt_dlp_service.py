@@ -73,6 +73,9 @@ def download_youtube_audio(url: str, output_path: str = None, timeout: int = 60)
         logger.exception(f"An error occurred during download: {str(e)}")
         raise RuntimeError(f"An error occurred during download: {str(e)}")
 
+    finally:
+        remove_partial_downloads(output_path)
+
     matching_files = glob.glob(os.path.join(output_path, f"{unique_id}.*"))
     if not matching_files:
         logger.error(f"Downloaded file not found in {output_path}")
@@ -82,3 +85,22 @@ def download_youtube_audio(url: str, output_path: str = None, timeout: int = 60)
     logger.info(f"Download complete. File saved at: {downloaded_file}")
 
     return downloaded_file
+
+
+def remove_partial_downloads(output_path: str = None) -> None:
+    """Remove any partial downloads in the specified output directory.
+    Args:
+        output_path (str, optional): Directory to check for partial downloads. Defaults to a 'downloads' directory in the project root.
+    """
+    if output_path is None:
+        output_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "downloads")
+        )
+
+    logger.info(f"Removing partial downloads from: {output_path}")
+    for file in glob.glob(os.path.join(output_path, "*.part")):
+        try:
+            os.remove(file)
+            logger.debug(f"Removed partial file: {file}")
+        except Exception as e:
+            logger.error(f"Failed to remove partial file {file}: {str(e)}")
