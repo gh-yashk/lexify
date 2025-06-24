@@ -33,13 +33,13 @@ def transcribe_audio(audio_path: str) -> str:
         logger.error(f"File not found: {audio_path}")
         raise FileNotFoundError(f"File not found: {audio_path}")
 
-    detect_language_result = detect_language(audio_path)
-    if detect_language_result != "en":
+    detected_language = detect_language(audio_path)
+    if detected_language != "en":
         logger.error(
-            f"Unsupported language detected: {detect_language_result}. Only English is supported."
+            f"Unsupported language detected: {detected_language}. Only English is supported."
         )
         raise ValueError(
-            f"Unsupported language: {detect_language_result}. Only English is supported."
+            f"Unsupported language: {detected_language}. Only English is supported."
         )
 
     use_fp16 = (
@@ -60,6 +60,9 @@ def transcribe_audio(audio_path: str) -> str:
     except Exception as e:
         logger.error(f"Failed to transcribe audio: {str(e)}")
         raise RuntimeError(f"Failed to transcribe audio: {e}")
+    finally:
+        os.remove(audio_path)
+        logger.info(f"Audio file removed after transcription: {audio_path}")
 
 
 def detect_language(audio_path: str, sample_duration: float = 30.0) -> str:
