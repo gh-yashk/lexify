@@ -1,6 +1,6 @@
 import os
 import uuid
-from logger_setup import logger
+from app.utils.logger_setup import logger
 
 
 def get_file_path(file_name: str, path: str = None) -> str:

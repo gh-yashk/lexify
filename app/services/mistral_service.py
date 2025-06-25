@@ -1,5 +1,5 @@
 import requests
-from utils.logger_setup import logger
+from app.utils.logger_setup import logger
 
 
 def mistral_response(prompt: str) -> str:

@@ -3,7 +3,7 @@ import glob
 import uuid
 import subprocess
 
-from utils.logger_setup import logger
+from app.utils.logger_setup import logger
 
 
 def download_youtube_audio(url: str, output_path: str = None, timeout: int = 60) -> str:

@@ -2,7 +2,7 @@ import os
 import whisper
 import torch
 
-from utils.logger_setup import logger
+from app.utils.logger_setup import logger
 
 model = {
     "tiny": whisper.load_model("tiny"),

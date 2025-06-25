@@ -1,9 +1,9 @@
-from services.yt_dlp_service import download_youtube_audio
-from services.whisper_service import transcribe_audio
-from utils.prompt_generator import generate_prompt
-from services.mistral_service import mistral_response
-from utils.file_utils import write_to_file
-from utils.logger_setup import logger
+from app.services.yt_dlp_service import download_youtube_audio
+from app.services.whisper_service import transcribe_audio
+from app.utils.prompt_generator import generate_prompt
+from app.services.mistral_service import mistral_response
+from app.utils.file_utils import write_to_file
+from app.utils.logger_setup import logger
 
 
 def generate_md_notes(youtube_url: str) -> str:
