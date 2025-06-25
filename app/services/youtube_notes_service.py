@@ -1,0 +1,40 @@
+from services.yt_dlp_service import download_youtube_audio
+from services.whisper_service import transcribe_audio
+from utils.prompt_generator import generate_prompt
+from services.mistral_service import mistral_response
+from utils.file_utils import write_to_file
+from utils.logger_setup import logger
+
+
+def generate_md_notes(youtube_url: str) -> str:
+    logger.info(f"Starting markdown notes generation for URL: {youtube_url}")
+    try:
+        # Step 1: Download audio
+        logger.debug("Downloading audio from YouTube...")
+        audio_path = download_youtube_audio(youtube_url)
+        logger.info(f"Audio downloaded to: {audio_path}")
+
+        # Step 2: Transcribe audio
+        logger.debug("Transcribing audio...")
+        transcript = transcribe_audio(audio_path)
+        logger.info("Transcription completed.")
+
+        # Step 3: Generate prompt
+        logger.debug("Generating prompt for Mistral...")
+        prompt = generate_prompt(transcript, references=[youtube_url])
+        logger.info("Prompt generated.")
+
+        # Step 4: Get response from Mistral
+        logger.debug("Getting response from Mistral...")
+        markdown_notes = mistral_response(prompt)
+        logger.info("Received response from Mistral.")
+
+        # Step 5: Write to file
+        logger.debug("Writing markdown notes to file...")
+        _, file_name = write_to_file(markdown_notes, file_ext="md")
+        logger.info(f"Markdown notes written to file: {file_name}")
+
+        return file_name
+    except Exception as e:
+        logger.error(f"Error generating markdown notes: {e}", exc_info=True)
+        raise
