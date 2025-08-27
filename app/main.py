@@ -1,71 +1,62 @@
+import os
+
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.models.youtube import YouTubeURL
 from app.services.youtube_notes_service import generate_md_notes
-from app.utils.file_utils import get_file_path
 from app.utils.logger_setup import logger
 
 app = FastAPI(
     title="YouTube to Markdown Notes API",
     description="Generate structured Markdown notes from YouTube videos using transcription and summarization.",
+    version="1.0.0",
 )
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-@app.get("/", summary="API Usage Information")
-def read_root():
+
+@app.get("/", include_in_schema=False)
+async def serve_index() -> FileResponse:
     """
-    Returns basic usage information and available endpoints.
+    Serves the index.html file for the frontend.
     """
-    return {
-        "message": "Welcome to the YouTube to Markdown Notes API",
-        "endpoints": {
-            "POST /generate-notes/": "Submit a YouTube URL and get a downloadable Markdown file of summarized notes.",
-            "GET /download/{file_name}": "Download the previously generated Markdown file using its name.",
-        },
-        "example_request": {
-            "POST /generate-notes/": {
-                "body": {"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
-            }
-        },
-    }
+    index_path = os.path.join("app", "template", "index.html")
+    if not os.path.exists(index_path):
+        logger.error("index.html not found at app/templates/")
+        raise HTTPException(status_code=404, detail="Index file not found")
+    return FileResponse(index_path)
 
 
 @app.post("/generate-notes/", summary="Generate Markdown Notes")
 async def generate_notes(data: YouTubeURL, request: Request):
     """
-    Accepts a YouTube URL, processes the video, and returns the filename and download link for the generated Markdown notes.
+    Accepts a YouTube URL, processes the video, and returns the AI-generated notes as raw markdown.
     """
     logger.info(f"Received request to generate notes for URL: {data.url}")
+
     try:
-        file_name = generate_md_notes(data.url)
-        logger.info(f"Generated notes file: {file_name} for URL: {data.url}")
+        md_notes = generate_md_notes(str(data.url))
 
-        # Generate the absolute download URL
-        download_url = request.url_for("download_file", file_name=file_name)
+        if not md_notes or not md_notes.strip():
+            logger.warning(f"No notes generated for URL: {data.url}")
+            raise HTTPException(status_code=500, detail="No notes generated")
 
+        logger.info(f"Successfully generated notes for URL: {data.url}")
         return {
             "youtube_url": data.url,
-            "file_name": file_name,
-            "download_url": download_url,
+            "md_notes": md_notes,
         }
+
+    except HTTPException as http_err:
+        raise http_err
     except Exception as e:
-        logger.error(f"Error generating notes for URL {data.url}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate notes")
-
-
-@app.get("/download/{file_name}", summary="Download Generated Markdown Note")
-def download_file(file_name: str):
-    """
-    Serves the generated Markdown note file for download.
-    """
-    logger.info(f"Download requested for file: {file_name}")
-    try:
-        file_path = get_file_path(file_name)
-        logger.debug(f"File path resolved for download: {file_path}")
-        return FileResponse(
-            path=file_path, filename=file_name, media_type="text/markdown"
+        logger.error(
+            f"Unexpected error while generating notes for {data.url}: {e}",
+            exc_info=True,
         )
-    except Exception as e:
-        logger.error(f"Error downloading file {file_name}: {e}", exc_info=True)
-        raise HTTPException(status_code=404, detail="File not found")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An internal error occurred while generating notes."},
+        )
