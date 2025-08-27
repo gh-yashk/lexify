@@ -30,11 +30,11 @@ def generate_md_notes(youtube_url: str) -> str:
         logger.info("Received response from Mistral.")
 
         # Step 5: Write to file
-        logger.debug("Writing markdown notes to file...")
-        _, file_name = write_to_file(markdown_notes, file_ext="md")
-        logger.info(f"Markdown notes written to file: {file_name}")
+        # logger.debug("Writing markdown notes to file...")
+        # _, file_name = write_to_file(markdown_notes, file_ext="md")
+        # logger.info(f"Markdown notes written to file: {file_name}")
 
-        return file_name
+        return markdown_notes
     except Exception as e:
         logger.error(f"Error generating markdown notes: {e}", exc_info=True)
         raise
