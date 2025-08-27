@@ -1,7 +1,7 @@
 from app.services.yt_dlp_service import download_youtube_audio
 from app.services.whisper_service import transcribe_audio
 from app.utils.prompt_generator import generate_prompt
-from app.services.llama_service import mistral_response
+from app.services.llama_service import llama_response
 from app.utils.logger_setup import logger
 
 
@@ -19,14 +19,14 @@ def generate_md_notes(youtube_url: str) -> str:
         logger.info("Transcription completed.")
 
         # Step 3: Generate prompt
-        logger.debug("Generating prompt for Mistral...")
+        logger.debug("Generating prompt for Llama3...")
         prompt = generate_prompt(transcript, references=[youtube_url])
         logger.info("Prompt generated.")
 
-        # Step 4: Get response from Mistral
-        logger.debug("Getting response from Mistral...")
-        markdown_notes = mistral_response(prompt)
-        logger.info("Received response from Mistral.")
+        # Step 4: Get response from Llama3
+        logger.debug("Getting response from Llama3...")
+        markdown_notes = llama_response(prompt)
+        logger.info("Received response from Llama3.")
 
         # Step 5: Write to file
         # logger.debug("Writing markdown notes to file...")
