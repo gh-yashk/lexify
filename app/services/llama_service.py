@@ -13,7 +13,7 @@ def mistral_response(prompt: str) -> str:
     """
     url = "http://localhost:11434/api/generate"
     payload = {
-        "model": "mistral:7b",
+        "model": "llama3.1:latest",
         "prompt": prompt,
         "stream": False,
     }
