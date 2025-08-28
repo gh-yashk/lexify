@@ -1,6 +1,6 @@
 /**
- * AI Notes Generator - Enhanced JavaScript Application
- * Modern, accessible, and performant implementation with automatic theme detection
+ * AI Notes Generator - Fixed Math Processing Order
+ * Processes math expressions BEFORE markdown to prevent interference
  */
 
 const TIMEOUT_MS = 60000 * 10;
@@ -31,18 +31,17 @@ const Utils = {
         return patterns.some(pattern => pattern.test(url.trim()));
     },
 
-    sanitizeHtml(html) {
-        const div = document.createElement('div');
-        div.textContent = html;
-        return div.innerHTML;
-    },
-
     getTimestamp() {
         return new Date().toISOString().split('T')[0];
     },
 
     generateId() {
         return `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    },
+
+    // NEW: Generate unique placeholder for math expressions
+    generateMathPlaceholder() {
+        return `MATH_PLACEHOLDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 };
 
@@ -92,11 +91,12 @@ class AppState {
     }
 }
 
-// UI Management
+// UI Management with Fixed Math Processing
 class UIManager {
     constructor(appState) {
         this.appState = appState;
         this.elements = this.cacheElements();
+        this.mathPlaceholders = new Map(); // Store math expressions temporarily
         this.setupStateSubscription();
         this.setupEventDelegation();
     }
@@ -414,51 +414,165 @@ class UIManager {
         }
     }
 
+    // FIXED: New approach - process math BEFORE markdown
     renderContent(content) {
         if (!this.elements.markdownContent || !content) return;
 
         try {
-            let html;
+            // Clear previous math placeholders
+            this.mathPlaceholders.clear();
 
+            // Step 1: Extract and protect math expressions BEFORE markdown processing
+            const contentWithPlaceholders = this.protectMathExpressions(content);
+
+            // Step 2: Process markdown (now safe from math interference)
+            let html;
             if (typeof marked !== 'undefined') {
-                html = marked.parse(content);
+                html = marked.parse(contentWithPlaceholders);
             } else {
-                html = this.fallbackMarkdownParser(content);
+                html = this.fallbackMarkdownParser(contentWithPlaceholders);
             }
 
-            this.elements.markdownContent.innerHTML = this.sanitizeAndHighlight(html);
+            // Step 3: Restore math expressions with rendered KaTeX
+            html = this.restoreAndRenderMath(html);
+
+            // Step 4: Set the final HTML content
+            this.elements.markdownContent.innerHTML = html;
+
+            // Step 5: Apply syntax highlighting to code blocks
+            this.applySyntaxHighlighting();
+
+            console.log('Content rendered successfully with proper math processing');
 
         } catch (error) {
             console.error('Render error:', error);
-            this.elements.markdownContent.innerHTML = `<pre>${Utils.sanitizeHtml(content)}</pre>`;
+            this.elements.markdownContent.innerHTML = `<pre>${this.escapeHtml(content)}</pre>`;
         }
     }
 
+    // NEW: Extract math expressions and replace with placeholders
+    protectMathExpressions(content) {
+        let processedContent = content;
+
+        // Protect display math ($$...$$) - greedy match to handle multiple lines
+        processedContent = processedContent.replace(/\$\$([\s\S]*?)\$\$/g, (match, mathContent) => {
+            const placeholder = Utils.generateMathPlaceholder();
+            this.mathPlaceholders.set(placeholder, {
+                content: mathContent.trim(),
+                type: 'display',
+                original: match
+            });
+            return placeholder;
+        });
+
+        // Protect inline math ($...$) - non-greedy, single line
+        processedContent = processedContent.replace(/\$([^$\r\n]+?)\$/g, (match, mathContent) => {
+            const placeholder = Utils.generateMathPlaceholder();
+            this.mathPlaceholders.set(placeholder, {
+                content: mathContent.trim(),
+                type: 'inline',
+                original: match
+            });
+            return placeholder;
+        });
+
+        // Protect LaTeX-style delimiters \(...\) and \[...\]
+        processedContent = processedContent.replace(/\\\(([\s\S]*?)\\\)/g, (match, mathContent) => {
+            const placeholder = Utils.generateMathPlaceholder();
+            this.mathPlaceholders.set(placeholder, {
+                content: mathContent.trim(),
+                type: 'inline',
+                original: match
+            });
+            return placeholder;
+        });
+
+        processedContent = processedContent.replace(/\\\[([\s\S]*?)\\\]/g, (match, mathContent) => {
+            const placeholder = Utils.generateMathPlaceholder();
+            this.mathPlaceholders.set(placeholder, {
+                content: mathContent.trim(),
+                type: 'display',
+                original: match
+            });
+            return placeholder;
+        });
+
+        console.log(`Protected ${this.mathPlaceholders.size} math expressions from markdown processing`);
+        return processedContent;
+    }
+
+    // NEW: Restore math placeholders with rendered KaTeX
+    restoreAndRenderMath(html) {
+        let processedHtml = html;
+
+        for (const [placeholder, mathData] of this.mathPlaceholders) {
+            try {
+                let renderedMath;
+
+                if (typeof katex !== 'undefined') {
+                    // Use KaTeX to render the math
+                    renderedMath = katex.renderToString(mathData.content, {
+                        displayMode: mathData.type === 'display',
+                        throwOnError: false,
+                        output: 'htmlAndMathml',
+                        trust: true,
+                        strict: 'ignore'
+                    });
+                } else {
+                    // Fallback: return original math expression
+                    console.warn('KaTeX not available, using original math expression');
+                    renderedMath = mathData.original;
+                }
+
+                // Replace placeholder with rendered math
+                processedHtml = processedHtml.replace(placeholder, renderedMath);
+
+            } catch (error) {
+                console.warn(`Failed to render math: ${mathData.content}`, error);
+                // On error, replace with original expression
+                processedHtml = processedHtml.replace(placeholder, mathData.original);
+            }
+        }
+
+        return processedHtml;
+    }
+
+    // Separate method for syntax highlighting
+    applySyntaxHighlighting() {
+        if (typeof hljs !== 'undefined' && this.elements.markdownContent) {
+            this.elements.markdownContent.querySelectorAll('pre code').forEach(block => {
+                if (!block.classList.contains('hljs')) {
+                    hljs.highlightElement(block);
+                }
+            });
+        }
+    }
+
+    // Updated fallback parser to NOT escape HTML
     fallbackMarkdownParser(content) {
         return content
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
             .replace(/^# (.*)$/gm, '<h1>$1</h1>')
             .replace(/^## (.*)$/gm, '<h2>$1</h2>')
             .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+            .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+            .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+            .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/^```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>')
+            .replace(/^- (.*)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+            .replace(/^\d+\. (.*)$/gm, '<li>$1</li>')
             .replace(/\n\n/g, '</p><p>')
+            .replace(/^(?!<[hul])/gm, '<p>')
+            .replace(/(?<!>)$/gm, '</p>')
             .replace(/\n/g, '<br>');
     }
 
-    sanitizeAndHighlight(html) {
+    escapeHtml(text) {
         const div = document.createElement('div');
-        div.innerHTML = html;
-
-        if (typeof hljs !== 'undefined') {
-            div.querySelectorAll('pre code').forEach(block => {
-                hljs.highlightElement(block);
-            });
-        }
-
+        div.textContent = text;
         return div.innerHTML;
     }
 
@@ -559,6 +673,7 @@ class UIManager {
 
     resetApp() {
         this.appState.reset();
+        this.mathPlaceholders.clear(); // Clear math placeholders on reset
 
         if (this.elements.urlInput) {
             this.elements.urlInput.value = '';
@@ -601,18 +716,18 @@ class UIManager {
         const ripple = document.createElement('span');
         ripple.className = 'ripple-effect';
         ripple.style.cssText = `
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.3);
-      width: ${size}px;
-      height: ${size}px;
-      left: ${x}px;
-      top: ${y}px;
-      transform: scale(0);
-      animation: ripple-grow 0.6s ease-out;
-      pointer-events: none;
-      z-index: 1;
-    `;
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            width: ${size}px;
+            height: ${size}px;
+            left: ${x}px;
+            top: ${y}px;
+            transform: scale(0);
+            animation: ripple-grow 0.6s ease-out;
+            pointer-events: none;
+            z-index: 1;
+        `;
 
         if (getComputedStyle(button).position === 'static') {
             button.style.position = 'relative';
@@ -654,7 +769,8 @@ class AINotesApp {
             this.appState.setState({ current: 'initial' });
 
             console.log('AI Notes App initialized successfully');
-            console.log('Theme will automatically follow system preference');
+            console.log('Fixed math processing order - math rendered before markdown');
+            console.log('HTML rendering enabled');
 
         } catch (error) {
             console.error('Failed to initialize app:', error);
@@ -667,28 +783,78 @@ class AINotesApp {
             const style = document.createElement('style');
             style.id = 'app-animations';
             style.textContent = `
-        @keyframes ripple-grow {
-          to {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
-        
-        .ripple-effect {
-          animation: ripple-grow 0.6s ease-out;
-        }
-        
-        .action-btn:focus-visible,
-        .primary-btn:focus-visible {
-          outline: 2px solid var(--color-primary);
-          outline-offset: 2px;
-        }
-        
-        [aria-busy="true"] {
-          cursor: wait;
-          opacity: 0.7;
-        }
-      `;
+                @keyframes ripple-grow {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+
+                .ripple-effect {
+                    animation: ripple-grow 0.6s ease-out;
+                }
+
+                .action-btn:focus-visible,
+                .primary-btn:focus-visible {
+                    outline: 2px solid var(--color-primary);
+                    outline-offset: 2px;
+                }
+
+                [aria-busy="true"] {
+                    cursor: wait;
+                    opacity: 0.7;
+                }
+
+                .katex-error {
+                    color: #dc3545;
+                    background-color: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    border-radius: 0.25rem;
+                    padding: 0.25rem 0.5rem;
+                    font-family: monospace;
+                }
+
+                .katex-display {
+                    text-align: center;
+                    margin: 1rem 0;
+                }
+
+                /* Enhanced matrix display */
+                .katex .mord .mtable .col-align-c > .vlist-t {
+                    text-align: center;
+                }
+
+                /* Ensure HTML elements render properly */
+                .markdown-content {
+                    line-height: 1.6;
+                }
+
+                .markdown-content > *:first-child {
+                    margin-top: 0;
+                }
+
+                .markdown-content > *:last-child {
+                    margin-bottom: 0;
+                }
+
+                .markdown-content table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin: 1rem 0;
+                }
+
+                .markdown-content th,
+                .markdown-content td {
+                    border: 1px solid #ddd;
+                    padding: 0.75rem;
+                    text-align: left;
+                }
+
+                .markdown-content th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                }
+            `;
             document.head.appendChild(style);
         }
     }
@@ -699,6 +865,8 @@ class AINotesApp {
                 breaks: true,
                 gfm: true,
                 sanitize: false,
+                headerIds: false,
+                mangle: false,
                 highlight: (code, lang) => {
                     if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
                         try {
@@ -711,6 +879,8 @@ class AINotesApp {
                     return code;
                 }
             });
+
+            console.log('Marked.js configured with HTML support and math protection');
         }
     }
 

@@ -141,65 +141,6 @@
     --container-xl: 1280px;
 }
 
-/* Dark mode colors - YouTube Dark Theme */
-@media (prefers-color-scheme: dark) {
-    :root {
-        /* RGB versions for opacity control (Dark Mode) */
-        --color-gray-300-rgb: 212, 212, 212;
-        --color-gray-400-rgb: 156, 163, 175;
-        --color-white-rgb: 255, 255, 255;
-
-        /* Background color tokens (Dark Mode) */
-        --color-bg-1: rgba(29, 78, 216, 0.15);
-        --color-bg-2: rgba(180, 83, 9, 0.15);
-        --color-bg-3: rgba(21, 128, 61, 0.15);
-        --color-bg-4: rgba(185, 28, 28, 0.15);
-        --color-bg-5: rgba(107, 33, 168, 0.15);
-        --color-bg-6: rgba(194, 65, 12, 0.15);
-        --color-bg-7: rgba(190, 24, 93, 0.15);
-        --color-bg-8: rgba(8, 145, 178, 0.15);
-
-        /* Semantic Color Tokens (Dark Mode - YouTube Style) */
-        --color-background: var(--color-dark-bg);
-        --color-surface: var(--color-dark-surface);
-        --color-text: var(--color-white);
-        --color-text-secondary: var(--color-gray-300);
-        --color-primary: var(--color-youtube-red);
-        --color-primary-hover: var(--color-youtube-red-hover);
-        --color-primary-active: var(--color-youtube-red-active);
-        --color-secondary: var(--color-dark-elevated);
-        --color-secondary-hover: var(--color-gray-700);
-        --color-secondary-active: var(--color-gray-600);
-        --color-border: var(--color-gray-700);
-        --color-error: var(--color-youtube-red);
-        --color-success: var(--color-green-500);
-        --color-warning: var(--color-orange-500);
-        --color-info: var(--color-gray-400);
-        --color-focus-ring: rgba(var(--color-youtube-red-rgb), 0.3);
-        --color-btn-primary-text: var(--color-white);
-        --color-card-border: var(--color-gray-700);
-        --color-card-border-inner: var(--color-gray-700);
-        --color-border-secondary: var(--color-gray-700);
-        --color-select-caret: rgba(var(--color-white-rgb), 0.8);
-        --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.05),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-
-        /* RGB versions for dark mode */
-        --color-success-rgb: 34, 197, 94;
-        --color-error-rgb: 255, 0, 0;
-        --color-warning-rgb: 249, 115, 22;
-        --color-info-rgb: 156, 163, 175;
-
-        /* Updated shadows for dark mode */
-        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
-            0 2px 4px -1px rgba(0, 0, 0, 0.2);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3),
-            0 4px 6px -2px rgba(0, 0, 0, 0.2);
-    }
-}
-
 /* Base styles */
 html {
     font-size: var(--font-size-base);
@@ -219,6 +160,15 @@ body {
     color: var(--color-text);
     line-height: var(--line-height-normal);
     transition: background-color var(--duration-normal), color var(--duration-normal);
+    height: 90vh;
+    overflow: hidden;
+}
+
+#app {
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 *,
@@ -332,12 +282,6 @@ select.form-control {
     padding-right: var(--space-32);
 }
 
-@media (prefers-color-scheme: dark) {
-    select.form-control {
-        background-image: var(--select-caret-dark);
-    }
-}
-
 .form-control:focus {
     border-color: var(--color-primary);
     outline: var(--focus-outline);
@@ -350,6 +294,11 @@ select.form-control {
     margin-left: auto;
     padding-right: var(--space-16);
     padding-left: var(--space-16);
+
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 @media (min-width: 640px) {
@@ -503,8 +452,11 @@ input[type="url"]::placeholder {
 
 /* Main Content */
 .main {
-    min-height: calc(100vh - 80px);
-    padding: var(--space-24) 0;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-12) 0;
 }
 
 .app-card {
@@ -513,6 +465,8 @@ input[type="url"]::placeholder {
     box-shadow: var(--shadow-md);
     overflow: hidden;
     transition: all var(--duration-normal);
+    display: flex;
+    flex-direction: column;
 }
 
 /* Initial State */
@@ -657,6 +611,7 @@ input[type="url"]::placeholder {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: var(--space-12);
+    flex-shrink: 0;
 }
 
 .action-buttons {
@@ -765,8 +720,15 @@ input[type="url"]::placeholder {
 /* Content Wrapper */
 .content-wrapper {
     padding: var(--space-24);
-    max-height: 70vh;
     overflow-y: auto;
+}
+
+
+.content-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* Markdown Content - Enhanced colors and syntax highlighting */
@@ -935,93 +897,6 @@ input[type="url"]::placeholder {
     font-style: italic;
 }
 
-/* Dark mode syntax highlighting */
-@media (prefers-color-scheme: dark) {
-    .markdown-content a {
-        color: #58a6ff;
-        /* Lighter blue for dark theme */
-    }
-
-    .markdown-content a:hover {
-        color: #79c0ff;
-    }
-
-    /* Dark theme inline code */
-    .markdown-content code {
-        background-color: rgba(110, 118, 129, 0.2);
-        color: #ff7b72;
-        /* Light coral for inline code */
-        border: 1px solid rgba(110, 118, 129, 0.3);
-    }
-
-    /* Dark theme code blocks */
-    .markdown-content pre {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-    }
-
-    .markdown-content pre code {
-        color: #e6edf3;
-        /* Light gray for base text */
-    }
-
-    /* Dark theme syntax highlighting */
-    .markdown-content pre code .hljs-keyword,
-    .markdown-content pre code .hljs-selector-tag,
-    .markdown-content pre code .hljs-title,
-    .markdown-content pre code .hljs-section,
-    .markdown-content pre code .hljs-doctag,
-    .markdown-content pre code .hljs-name,
-    .markdown-content pre code .hljs-strong {
-        color: #ff7b72;
-        /* Light red for keywords */
-    }
-
-    .markdown-content pre code .hljs-string,
-    .markdown-content pre code .hljs-title.class_,
-    .markdown-content pre code .hljs-title.class_.inherited__,
-    .markdown-content pre code .hljs-title.function_,
-    .markdown-content pre code .hljs-attr,
-    .markdown-content pre code .hljs-symbol,
-    .markdown-content pre code .hljs-bullet,
-    .markdown-content pre code .hljs-code,
-    .markdown-content pre code .hljs-addition {
-        color: #a5d6ff;
-        /* Light blue for strings */
-    }
-
-    .markdown-content pre code .hljs-number,
-    .markdown-content pre code .hljs-literal,
-    .markdown-content pre code .hljs-meta,
-    .markdown-content pre code .hljs-link {
-        color: #79c0ff;
-        /* Brighter blue for numbers */
-    }
-
-    .markdown-content pre code .hljs-comment,
-    .markdown-content pre code .hljs-quote,
-    .markdown-content pre code .hljs-deletion {
-        color: #8b949e;
-        /* Light gray for comments */
-        font-style: italic;
-    }
-
-    .markdown-content pre code .hljs-variable,
-    .markdown-content pre code .hljs-template-variable,
-    .markdown-content pre code .hljs-attribute {
-        color: #ffa657;
-        /* Light orange for variables */
-    }
-
-    .markdown-content pre code .hljs-built_in,
-    .markdown-content pre code .hljs-builtin-name,
-    .markdown-content pre code .hljs-type,
-    .markdown-content pre code .hljs-class {
-        color: #d2a8ff;
-        /* Light purple for built-ins */
-    }
-}
-
 /* Additional code highlighting for better visibility */
 .markdown-content pre code .hljs-tag {
     color: inherit;
@@ -1033,16 +908,6 @@ input[type="url"]::placeholder {
 
 .markdown-content pre code .hljs-tag .hljs-attr {
     color: #6f42c1;
-}
-
-@media (prefers-color-scheme: dark) {
-    .markdown-content pre code .hljs-tag .hljs-name {
-        color: #7ee787;
-    }
-
-    .markdown-content pre code .hljs-tag .hljs-attr {
-        color: #d2a8ff;
-    }
 }
 
 /* Table styling for completeness */
